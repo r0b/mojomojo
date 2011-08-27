@@ -87,11 +87,23 @@ sub end : Private {
     my ( $self, $c ) = @_;
 
     my $theme=$c->pref('theme');
+    
     # if theme doesn't exist
     if ( ! -d  $c->path_to('root','static','themes',$theme)) {
        $theme='default';
        $c->pref('theme',$theme);
     }
+    else {
+           my $check_perm = sub {
+           	   my $path = shift;
+           	   my $user;
+                  $user = $c->user->obj if $c->user_exists() ;       
+               my $perms = $c->check_permissions( $path, $user );
+               return ($perms->{view} ? 1 : 0)
+           } ;
+           $c->forward('MojoMojo::Controller::Jsrpc', 'wiki_tree', [$check_perm]);
+     }
+
     $c->stash->{additional_template_paths} =
         [ $c->path_to('root','themes',$theme) ];
 

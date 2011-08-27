@@ -6,7 +6,7 @@ use Carp qw/croak/;
 
 use parent qw/MojoMojo::Schema::Base::Result/;
 
-__PACKAGE__->load_components("Core");
+__PACKAGE__->load_components( "Tree::AdjacencyList", "UTF8Columns", "Core");
 __PACKAGE__->table("page");
 __PACKAGE__->add_columns(
     "id",
@@ -104,6 +104,7 @@ __PACKAGE__->has_many(
     { "foreign.pageid" => "self.id" }
 );
 
+__PACKAGE__->parent_column("parent");
 =head1 NAME
 
 MojoMojo::Schema::Result::Page - store pages

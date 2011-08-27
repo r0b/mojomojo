@@ -434,4 +434,80 @@ sub create_page {
   $self->set_paths($page);
 }
 
+
+=head2 get_wiki_tree
+
+    $tree = __PACKAGE__->get_wiki_tree(  )
+
+This code outputs a data structure that is suitable for serializing in JSON format
+* full tree from the bottom root of the tree
+
+=cut
+
+sub get_wiki_tree {
+    my $self = shift;
+    my $check = shift;
+    my @res;
+    my $rs = $self->search( { parent => undef}, {order_by => [ 'name'] } );
+    
+    while (my $node = $rs->next) {
+	     no strict 'refs';
+        if (&$check($node->name())) {
+            # print STDERR  'Permission Granted 1  view '. $node->name . "\n";
+    	      push @res, $self->get_wiki_subTree($node,'/',$check);
+        }
+        else {
+              # print STDERR  'Permission Denied 1  view '. $node->name . "\n";
+        }
+    }
+    return \@res;
+}
+
+=head2 get_wiki_subTree
+
+    $tree = __PACKAGE__->get_children( $node )
+
+This code outputs a data structure that is suitable for serializing in JSON format
+* subtree of a specific node
+
+=cut
+
+
+sub get_wiki_subTree {
+    my ($self,$node, $parent, $check) = @_;
+    my $res = {};
+    $res->{title} = $node->name();
+    $res->{url}  = $parent ||  '/';
+    $res->{url} .= $node->name() unless $node->name() eq '/';
+    ($res->{key} = $res->{url}) =~ s{/$}{} ;
+
+    $res->{url} .= '/' unless $res->{url} =~ m{/$};
+    
+    my @kids = sort { $a->name() cmp $b->name() }  $node->children() ;
+    $res->{expand} = 0;
+    $res->{expand} = 1  if $node->name() eq '/';
+    if ( @kids ) {
+    	  my @children;
+    	  foreach my $k (@kids) {
+			  my $kid_url = $res->{url} ||  '/';
+			     $kid_url .= $k->name unless $k->name eq '/';
+	        { no strict 'refs';
+            if (&$check($kid_url)) {
+              # print STDERR  'Permission Granted 2  view '. $kid_url . "\n";
+    	  	     push @children,  $self->get_wiki_subTree($k, $res->{url}, $check) ;
+            }
+            else {
+              # print STDERR  'Permission Denied 2  view '. $kid_url . "\n";
+            }
+			  }
+    	  }
+        if ( @children ) {
+    	      $res->{children} = \@children;
+    	      $res->{isFolder} = 1;
+        }
+    }   
+
+    return $res;
+}
+
 1;

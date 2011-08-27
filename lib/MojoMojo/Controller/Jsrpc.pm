@@ -3,6 +3,7 @@ package MojoMojo::Controller::Jsrpc;
 use strict;
 use parent 'Catalyst::Controller';
 use HTML::Entities;
+use JSON;
 
 =head1 NAME
 
@@ -324,6 +325,14 @@ sub validate_perm_edit : Private {
 
     $c->stash->{role} = $role;
 }
+
+sub wiki_tree : Private {
+	 my ( $self, $c, $check_perm ) = @_;
+    my $tree = $c->model('DBIC::Page')->get_wiki_tree($check_perm);
+    $c->stash->{tree} =  JSON::to_json($tree);
+    ($c->stash->{navpath} = $c->stash->{path}) =~ s{/$}{};
+}
+
 
 =head1 AUTHOR
 
